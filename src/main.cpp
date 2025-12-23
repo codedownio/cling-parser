@@ -14,6 +14,7 @@
 #include <set>
 #include <sstream>
 #include <iomanip>
+#include <fstream>
 
 using interpreter_ptr = std::unique_ptr<cling::Interpreter>;
 
@@ -40,28 +41,10 @@ interpreter_ptr build_interpreter(int argc, char** argv)
 
 int main(int argc, char* argv[])
 {
+    std::string code((std::istreambuf_iterator<char>(std::cin)),
+                     std::istreambuf_iterator<char>());
+
     auto interp = build_interpreter(argc, argv);
-
-    // Test code with actual declarations to parse
-    std::string code = R"(
-#include <iostream>
-
-using namespace std;
-
-int x = 42;
-
-void myFunction(int param) {
-    return;
-}
-
-class MyClass {
-public:
-    int member;
-    void method();
- };
-
-cout << "hello" << endl;
-)";
 
     // Try basic Cling parsing
     cling::Transaction* T = nullptr;

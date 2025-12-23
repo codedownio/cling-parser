@@ -44,15 +44,9 @@
           nativeBuildInputs = [ pkgs.cmake ];
           buildInputs = with pkgs; [
             cling.unwrapped
-            cppzmq
-            libuuid
             llvmPackages_18.llvm
             ncurses
-            openssl
             pugixml
-            xeus-zmq
-            xtl
-            zeromq
             zlib
           ] ++ [
             argparse_2_9
@@ -108,22 +102,7 @@
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            cmake
-            clang
-            cling.unwrapped
-            cppzmq
-            libuuid
-            llvmPackages_18.llvm
-            ncurses
-            openssl
-            pugixml
-            xeus-zmq
-            xtl
-            zeromq
-            zlib
-          ] ++ [
-            argparse_2_9
-            xeus_3_2_0
+            python3
           ];
 
           shellHook = ''
