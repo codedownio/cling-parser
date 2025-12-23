@@ -1,6 +1,4 @@
 {
-  description = "Minimal C++ parser using Cling interpreter";
-
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
@@ -9,7 +7,7 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs { inherit system; };
 
         # Build our minimal parser (unwrapped)
         minimal-parser-unwrapped = pkgs.clangStdenv.mkDerivation {
@@ -22,7 +20,6 @@
           buildInputs = with pkgs; [
             cling.unwrapped
             llvmPackages_18.llvm
-            ncurses
           ];
 
           cmakeBuildType = "Release";
