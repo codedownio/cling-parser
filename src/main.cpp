@@ -12,6 +12,8 @@
 #include "llvm/Support/Casting.h"
 
 #include <set>
+#include <sstream>
+#include <iomanip>
 
 using interpreter_ptr = std::unique_ptr<cling::Interpreter>;
 
@@ -38,8 +40,6 @@ interpreter_ptr build_interpreter(int argc, char** argv)
 
 int main(int argc, char* argv[])
 {
-    std::cout << "BEGINNING OF MAIN" << std::endl;
-
     auto interp = build_interpreter(argc, argv);
 
     // Test code with actual declarations to parse
@@ -65,19 +65,15 @@ cout << "hello" << endl;
 
     // Try basic Cling parsing
     cling::Transaction* T = nullptr;
-    std::cerr << "About to parse code: " << code << std::endl;
     cling::Interpreter::CompilationResult result = interp->parse(code, &T);
-    std::cerr << "Parse completed, result: " << result << ", transaction: " << (void*)T << std::endl;
+
+    std::cout << "[";
+    bool first = true;
 
     if (T && result == cling::Interpreter::kSuccess) {
-        std::cerr << "Transaction details:" << std::endl;
-
         // Get source manager for location information
         clang::SourceManager& SM = interp->getCI()->getSourceManager();
 
-        // Count declarations and filter for input source only
-        size_t totalDeclCount = 0;
-        size_t inputDeclCount = 0;
         std::set<clang::Decl*> seenDecls; // Deduplicate declarations
 
         // Iterate through the declaration groups in the transaction
@@ -88,7 +84,6 @@ cout << "hello" << endl;
             // Iterate through individual declarations in this group
             for (auto declIt = DGR.begin(); declIt != DGR.end(); ++declIt) {
                 clang::Decl* decl = *declIt;
-                totalDeclCount++;
 
                 if (decl) {
                     clang::SourceLocation loc = decl->getLocation();
@@ -109,14 +104,12 @@ cout << "hello" << endl;
                             }
                         }
 
-                        // Filter: ONLY show declarations from actual input lines (much more restrictive)
+                        // Filter: ONLY show declarations from actual input lines
                         bool isFromInput = filename.find("input_line_") != std::string::npos;
 
                         // Skip if we've already seen this declaration (deduplicate)
                         if (isFromInput && seenDecls.find(decl) == seenDecls.end()) {
                             seenDecls.insert(decl);
-
-                            inputDeclCount++;
 
                             // Get line/column information for start and end
                             clang::SourceRange sourceRange = decl->getSourceRange();
@@ -126,78 +119,39 @@ cout << "hello" << endl;
                             clang::PresumedLoc startPresumedLoc = SM.getPresumedLoc(startLoc);
                             clang::PresumedLoc endPresumedLoc = SM.getPresumedLoc(endLoc);
 
-                            std::cerr << "  Declaration from input:" << std::endl;
-                            std::cerr << "    Type: " << decl->getDeclKindName() << std::endl;
-                            std::cerr << "    Pointer: " << (void*)decl << std::endl;
-                            std::cerr << "    Start: " << filename;
+                            if (!first) {
+                                std::cout << ",";
+                            }
+                            first = false;
+
+                            std::cout << "{";
+                            std::cout << "\"type\":\"" << decl->getDeclKindName() << "\"";
+
                             if (startPresumedLoc.isValid()) {
-                                std::cerr << " " << startPresumedLoc.getLine()
-                                          << ":" << startPresumedLoc.getColumn();
+                                std::cout << ",\"start_line\":" << startPresumedLoc.getLine();
+                                std::cout << ",\"start_ch\":" << startPresumedLoc.getColumn();
+                            } else {
+                                std::cout << ",\"start_line\":null";
+                                std::cout << ",\"start_ch\":null";
                             }
-                            std::cerr << std::endl;
-                            std::cerr << "    End: " << filename;
+
                             if (endPresumedLoc.isValid()) {
-                                std::cerr << " " << endPresumedLoc.getLine()
-                                          << ":" << endPresumedLoc.getColumn();
-                            }
-                            std::cerr << std::endl;
-
-                            // Try to get more specific information
-                            if (clang::NamedDecl* namedDecl = llvm::dyn_cast<clang::NamedDecl>(decl)) {
-                                std::cerr << "    Name: " << namedDecl->getNameAsString() << std::endl;
+                                std::cout << ",\"end_line\":" << endPresumedLoc.getLine();
+                                std::cout << ",\"end_ch\":" << endPresumedLoc.getColumn();
+                            } else {
+                                std::cout << ",\"end_line\":null";
+                                std::cout << ",\"end_ch\":null";
                             }
 
-                            // Show additional info for function declarations
-                            if (clang::FunctionDecl* funcDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
-                                std::cerr << "    Function return type: "
-                                         << funcDecl->getReturnType().getAsString() << std::endl;
-                                std::cerr << "    Number of parameters: "
-                                         << funcDecl->getNumParams() << std::endl;
-                                if (funcDecl->hasBody()) {
-                                    std::cerr << "    Has body: yes" << std::endl;
-                                } else {
-                                    std::cerr << "    Has body: no (declaration only)" << std::endl;
-                                }
-                            }
-
-                            // Show additional info for variable declarations
-                            if (clang::VarDecl* varDecl = llvm::dyn_cast<clang::VarDecl>(decl)) {
-                                std::cerr << "    Variable type: "
-                                         << varDecl->getType().getAsString() << std::endl;
-                            }
-
-                            // Show additional info for class/struct declarations
-                            if (clang::CXXRecordDecl* recordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(decl)) {
-                                std::cerr << "    Record type: " << (recordDecl->isClass() ? "class" : "struct") << std::endl;
-                                if (recordDecl->isCompleteDefinition()) {
-                                    std::cerr << "    Complete definition: yes" << std::endl;
-                                } else {
-                                    std::cerr << "    Complete definition: no (forward declaration)" << std::endl;
-                                }
-                                std::cerr << "    Definition pointer: " << (void*)recordDecl->getDefinition() << std::endl;
-                                std::cerr << "    Is this definition: " << (recordDecl->isThisDeclarationADefinition() ? "yes" : "no") << std::endl;
-                            }
-
-                            // Show additional info for field declarations
-                            if (clang::FieldDecl* fieldDecl = llvm::dyn_cast<clang::FieldDecl>(decl)) {
-                                std::cerr << "    Field type: "
-                                         << fieldDecl->getType().getAsString() << std::endl;
-                            }
-
-                            std::cerr << std::endl;
+                            std::cout << "}";
                         }
                     }
                 }
             }
         }
-
-        std::cerr << "Summary:" << std::endl;
-        std::cerr << "  Total declarations: " << totalDeclCount << std::endl;
-        std::cerr << "  Declarations from input: " << inputDeclCount << std::endl;
-
-    } else {
-        std::cerr << "No valid transaction or parsing failed (result: " << result << ")" << std::endl;
     }
+
+    std::cout << "]" << std::endl;
 
     return 0;
 }
