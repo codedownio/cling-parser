@@ -87,7 +87,9 @@
           fixupPhase = ''
             runHook preFixup
 
-            wrapProgram $out/bin/minimal-parser --add-flags "$flags"
+            wrapProgram $out/bin/minimal-parser \
+              --argv0 $out/bin/.minimal-parser-wrapped \
+              --add-flags "$flags"
 
             runHook postFixup
           '';

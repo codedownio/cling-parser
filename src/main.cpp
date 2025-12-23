@@ -27,16 +27,10 @@ interpreter_ptr build_interpreter(int argc, char** argv)
         interpreter_argv[i] = argv[i];
     }
 
-    std::cout << "GOT HERE 1" << std::endl;
-
     std::string include_dir = std::string(LLVM_DIR) + std::string("/include");
     interpreter_argv[interpreter_argc - 1] = include_dir.c_str();
 
-    std::cout << "GOT HERE 2" << std::endl;
-
     interpreter_ptr interp_ptr = std::make_unique<cling::Interpreter>(interpreter_argc, interpreter_argv, LLVM_DIR);
-
-    std::cout << "GOT HERE 3" << std::endl;
 
     delete[] interpreter_argv;
     return interp_ptr;
