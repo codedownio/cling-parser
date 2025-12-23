@@ -11,29 +11,6 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        # Nixpkgs moved to argparse 3.x, but we need ~2.9 (from xeus-cling.nix)
-        argparse_2_9 = pkgs.argparse.overrideAttrs (oldAttrs: {
-          version = "2.9";
-          src = pkgs.fetchFromGitHub {
-            owner = "p-ranav";
-            repo = "argparse";
-            rev = "v2.9";
-            sha256 = "sha256-vbf4kePi5gfg9ub4aP1cCK1jtiA65bUS9+5Ghgvxt/E=";
-          };
-        });
-
-        # Nixpkgs moved to xeus 5.2.0, but we need 3.2.0 (from xeus-cling.nix)
-        xeus_3_2_0 = pkgs.xeus.overrideAttrs (oldAttrs: {
-          version = "3.2.0";
-          src = pkgs.fetchFromGitHub {
-            owner = "jupyter-xeus";
-            repo = "xeus";
-            tag = "3.2.0";
-            sha256 = "sha256-D/dJ0SHxTHJw63gHD6FRZS7O2TVZ0voIv2mQASEjLA8=";
-          };
-          buildInputs = oldAttrs.buildInputs ++ pkgs.lib.singleton pkgs.xtl;
-        });
-
         # Build our minimal parser (unwrapped)
         minimal-parser-unwrapped = pkgs.clangStdenv.mkDerivation {
           pname = "minimal-cling-parser";
@@ -46,11 +23,6 @@
             cling.unwrapped
             llvmPackages_18.llvm
             ncurses
-            pugixml
-            zlib
-          ] ++ [
-            argparse_2_9
-            xeus_3_2_0
           ];
 
           cmakeBuildType = "Release";
