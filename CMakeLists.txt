@@ -94,11 +94,11 @@ endif()
 ###################
 
 # Build minimal parser
-add_executable(minimal-parser src/main.cpp)
-target_link_libraries(minimal-parser 
+add_executable(cling-parser src/main.cpp)
+target_link_libraries(cling-parser 
     clingInterpreter 
     clingMetaProcessor 
     clingUtils
 )
 
-install(TARGETS minimal-parser DESTINATION bin)
+install(TARGETS cling-parser DESTINATION bin)

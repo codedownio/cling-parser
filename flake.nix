@@ -10,7 +10,7 @@
         pkgs = import nixpkgs { inherit system; };
 
         # Build our minimal parser (unwrapped)
-        minimal-parser-unwrapped = pkgs.clangStdenv.mkDerivation {
+        cling-parser-unwrapped = pkgs.clangStdenv.mkDerivation {
           pname = "minimal-cling-parser";
           version = "0.1.0";
 
@@ -28,15 +28,15 @@
             description = "Minimal C++ parser using Cling interpreter";
             license = licenses.bsd3;
             platforms = platforms.unix;
-            mainProgram = "minimal-parser";
+            mainProgram = "cling-parser";
           };
         };
 
         # Wrapped version with proper cling flags
-        minimal-parser = minimal-parser-unwrapped.overrideAttrs (oldAttrs: {
+        cling-parser = cling-parser-unwrapped.overrideAttrs (oldAttrs: {
           nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [ pkgs.makeWrapper ];
 
-          # minimal-parser needs a collection of flags to start up properly, so wrap it by default.
+          # cling-parser needs a collection of flags to start up properly, so wrap it by default.
           # We'll provide the unwrapped version as a passthru
           flags = pkgs.cling.flags ++ [
             "-resource-dir"
@@ -50,23 +50,23 @@
           fixupPhase = ''
             runHook preFixup
 
-            wrapProgram $out/bin/minimal-parser \
-              --argv0 $out/bin/.minimal-parser-wrapped \
+            wrapProgram $out/bin/cling-parser \
+              --argv0 $out/bin/.cling-parser-wrapped \
               --add-flags "$flags"
 
             runHook postFixup
           '';
 
           passthru = (oldAttrs.passthru or { }) // {
-            unwrapped = minimal-parser-unwrapped;
+            unwrapped = cling-parser-unwrapped;
           };
         });
 
       in
       {
         packages = {
-          default = minimal-parser;
-          minimal-parser = minimal-parser;
+          default = cling-parser;
+          cling-parser = cling-parser;
         };
 
         devShells.default = pkgs.mkShell {
@@ -77,13 +77,13 @@
           shellHook = ''
             echo "Development shell for minimal Cling parser"
             echo "Build with: nix build"
-            echo "Run with: ./result/bin/minimal-parser"
+            echo "Run with: ./result/bin/cling-parser"
           '';
         };
 
         apps.default = flake-utils.lib.mkApp {
-          drv = minimal-parser;
-          name = "minimal-parser";
+          drv = cling-parser;
+          name = "cling-parser";
         };
       });
 }

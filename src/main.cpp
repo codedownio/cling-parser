@@ -124,7 +124,7 @@ interpreter_ptr build_interpreter(int argc, char** argv)
 {
     int interpreter_argc = argc + 1;
     const char** interpreter_argv = new const char*[interpreter_argc];
-    interpreter_argv[0] = "minimal-parser";
+    interpreter_argv[0] = "cling-parser";
 
     // Copy all arguments in the new array excepting the process name.
     for (int i = 1; i < argc; i++)
